@@ -1,6 +1,6 @@
 {
     "uuid": "always-on-top-outline@NikitaYechshenko",
-    "name": "Always On Top Outline",
+    "name": "always-on-top-outline",
     "description": "Shows a customizable border around windows set to always-on-top",
     "shell-version": ["45", "46", "47"],
     "url": "https://github.com/NikitaYechshenko/Always-On-Top-Outline",

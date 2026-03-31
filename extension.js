@@ -125,9 +125,14 @@ export default class AlwaysOnTopIndicatorExtension extends Extension {
     }
 
     _getBorderStyle() {
-        const alphaHex = Math.round(this._borderAlpha * 255).toString(16).padStart(2, '0');
-        const color = `#${this._borderColor}${alphaHex}`;
-        return `background-color: ${color};`;
+        // Parse HEX color to RGB components
+        const hex = this._borderColor.replace('#', '');
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        
+        // Use rgba() format - GNOME Shell CSS engine doesn't support 8-digit HEX
+        return `background-color: rgba(${r}, ${g}, ${b}, ${this._borderAlpha});`;
     }
 
     _updateBorderStyle() {
