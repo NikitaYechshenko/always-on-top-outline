@@ -5,6 +5,8 @@ A GNOME Shell extension that adds a customizable colored border around windows s
 ![GNOME Shell](https://img.shields.io/badge/GNOME_Shell-45--48-blue)
 ![License](https://img.shields.io/badge/License-GPL--3.0-green)
 
+<img width="2927" height="1499" alt="always on top outline" src="https://github.com/user-attachments/assets/94d16024-f805-4824-af16-dacb8de95a6c" />
+
 ## Features
 
 - **Customizable border thickness** — from 0.25px to 10px
