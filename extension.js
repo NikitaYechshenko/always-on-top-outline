@@ -31,16 +31,22 @@ export default class AlwaysOnTopIndicatorExtension extends Extension {
         // Watch for settings changes
         if (this._settings) {
             this._settingsChangedId = this._settings.connect('changed::border-thickness', () => {
-                const newWidth = this._settings.get_double('border-thickness');
+                const rawWidth = this._settings.get_double('border-thickness');
+                const newWidth = Number.isFinite(rawWidth) && rawWidth > 0 ? rawWidth : 2.0;
                 if (newWidth === this._borderWidth) return; // No change
 
                 this._borderWidth = newWidth;
 
-                // Update all existing borders - recreate them with new thickness
-                this._borders.forEach((borderInfo, metaWindow) => {
+                // Rebuild borders using a snapshot to avoid mutating the Map during iteration.
+                const windowsWithBorders = Array.from(this._borders.keys());
+                for (const metaWindow of windowsWithBorders) {
                     this._removeBorder(metaWindow);
-                    this._addBorder(metaWindow);
-                });
+
+                    // Add back only if the window still needs a border.
+                    if (metaWindow && metaWindow.is_above() && !metaWindow.minimized) {
+                        this._addBorder(metaWindow);
+                    }
+                }
             });
 
             this._colorChangedId = this._settings.connect('changed::border-color', () => {
@@ -64,6 +70,10 @@ export default class AlwaysOnTopIndicatorExtension extends Extension {
         // Connect to window added/removed signals
         this._windowAddedId = global.display.connect('window-created',
             this._onWindowCreated.bind(this));
+
+        // Connect to workspace switch to hide/show borders appropriately
+        this._workspaceSwitchId = global.window_manager.connect('switch-workspace',
+            this._onWorkspaceSwitch.bind(this));
 
         // Process existing windows
         const windowActors = global.get_window_actors();
@@ -96,6 +106,10 @@ export default class AlwaysOnTopIndicatorExtension extends Extension {
             global.display.disconnect(this._windowAddedId);
             this._windowAddedId = null;
         }
+        if (this._workspaceSwitchId) {
+            global.window_manager.disconnect(this._workspaceSwitchId);
+            this._workspaceSwitchId = null;
+        }
 
         // Clean up all borders and handlers
         this._borders.forEach((border, metaWindow) => {
@@ -122,6 +136,30 @@ export default class AlwaysOnTopIndicatorExtension extends Extension {
 
     _onWindowCreated(display, window) {
         this._setupWindow(window);
+    }
+
+    _onWorkspaceSwitch() {
+        // Update visibility of all borders based on current workspace
+        this._borders.forEach((borderInfo, metaWindow) => {
+            this._updateBorderVisibility(metaWindow, borderInfo);
+        });
+    }
+
+    _isWindowOnCurrentWorkspace(metaWindow) {
+        const activeWorkspace = global.workspace_manager.get_active_workspace();
+        const windowWorkspace = metaWindow.get_workspace();
+        return windowWorkspace === activeWorkspace || metaWindow.is_on_all_workspaces();
+    }
+
+    _updateBorderVisibility(metaWindow, borderInfo) {
+        if (!borderInfo || !borderInfo.actors) return;
+        
+        const visible = this._isWindowOnCurrentWorkspace(metaWindow);
+        borderInfo.actors.forEach(actor => {
+            if (actor) {
+                actor.visible = visible;
+            }
+        });
     }
 
     _getBorderStyle() {
@@ -164,6 +202,14 @@ export default class AlwaysOnTopIndicatorExtension extends Extension {
         // Connect to minimize/unminimize
         handlers.minimize = metaWindow.connect('notify::minimized', () => {
             this._updateWindowBorder(metaWindow);
+        });
+
+        // Connect to workspace changes for this window
+        handlers.workspace = metaWindow.connect('workspace-changed', () => {
+            const borderInfo = this._borders.get(metaWindow);
+            if (borderInfo) {
+                this._updateBorderVisibility(metaWindow, borderInfo);
+            }
         });
         
         // Connect to window unmanaged signal for cleanup
@@ -288,11 +334,15 @@ export default class AlwaysOnTopIndicatorExtension extends Extension {
         const positionChangedId = metaWindow.connect('position-changed', updateBorderGeometry);
 
         // Store border actors and their handler IDs
-        this._borders.set(metaWindow, {
+        const borderInfo = {
             actors: [borderTop, borderRight, borderBottom, borderLeft],
             sizeChangedId: sizeChangedId,
             positionChangedId: positionChangedId
-        });
+        };
+        this._borders.set(metaWindow, borderInfo);
+
+        // Set initial visibility based on current workspace
+        this._updateBorderVisibility(metaWindow, borderInfo);
     }
 
     _removeBorder(metaWindow) {
