@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.always-on-top-outline" path="/org/gnome/shell/extensions/always-on-top-outline/">
+    <key name="border-thickness" type="d">
+      <default>2.0</default>
+      <summary>Border thickness</summary>
+      <description>Thickness of the border around always-on-top windows (in pixels)</description>
+      <range min="0.25" max="10.0"/>
+    </key>
+    <key name="border-color" type="s">
+      <default>'bd93f9'</default>
+      <summary>Border color</summary>
+      <description>Color of the border in hex format (without #)</description>
+    </key>
+    <key name="border-alpha" type="d">
+      <default>1.0</default>
+      <summary>Border transparency</summary>
+      <description>Transparency of the border (0.0 = fully transparent, 1.0 = fully opaque)</description>
+      <range min="0.0" max="1.0"/>
+    </key>
+  </schema>
+</schemalist>
