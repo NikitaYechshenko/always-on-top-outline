@@ -58,6 +58,7 @@ Open the extension settings through the Extensions app to customize:
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+I tryed https://github.com/perosredo extension but it wasn't working, and i build new one. Thanks for your contribution!
 
 ## License
 
