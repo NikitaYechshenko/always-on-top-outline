@@ -1,0 +1,19 @@
+# Compiled schemas
+schemas/gschemas.compiled
+
+# Extension zip packages
+*.shell-extension.zip
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Debug logs
+*.log

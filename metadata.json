@@ -1,8 +1,9 @@
 {
     "uuid": "always-on-top-outline@NikitaYechshenko",
-    "name": "always-on-top-outline",
-    "description": "Shows a customizable border around windows set to always-on-top",
-    "shell-version": ["45", "46", "47"],
-    "url": "https://github.com/NikitaYechshenko/Always-On-Top-Outline",
+    "name": "always on top outline",
+    "description": "Adds a customizable colored border around windows set to \"Always on Top\". Configure border thickness, color, and transparency in the extension settings.",
+    "version": 1,
+    "shell-version": ["45", "46", "47", "48"],
+    "url": "https://github.com/NikitaYechshenko/always-on-top-outline",
     "settings-schema": "org.gnome.shell.extensions.always-on-top-outline"
 }
