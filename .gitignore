@@ -18,3 +18,5 @@ Thumbs.db
 # Debug logs
 *.log
 always-on-top-outline-v2@NikitaYechshenko.zip
+
+.venv/
