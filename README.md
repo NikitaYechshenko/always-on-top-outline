@@ -1,4 +1,5 @@
 # Always On Top Outline
+<img width="2004" height="1253" alt="image" src="https://github.com/user-attachments/assets/2956c2f3-2f35-422a-9c87-4466c5ba62c2" />
 
 A GNOME Shell extension that adds a customizable colored border around windows set to "Always on Top", making them easily identifiable.
 
