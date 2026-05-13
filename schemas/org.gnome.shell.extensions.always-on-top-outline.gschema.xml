@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
-  <schema id="org.gnome.shell.extensions.always-on-top-outline" path="/org/gnome/shell/extensions/always-on-top-outline/">
+  <schema id="org.gnome.shell.extensions.always-on-top-outline-v2" path="/org/gnome/shell/extensions/always-on-top-outline-v2/">
     <key name="border-thickness" type="d">
       <default>2.0</default>
       <summary>Border thickness</summary>

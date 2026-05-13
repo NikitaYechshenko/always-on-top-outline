@@ -21,15 +21,15 @@ A GNOME Shell extension that adds a customizable colored border around windows s
 
 ### From extensions.gnome.org (Recommended)
 
-Visit [Always On Top Outline](https://extensions.gnome.org/extension/XXXXX/always-on-top-outline/) and click "Install".
+The extension can be installed from its page on extensions.gnome.org after it is published and approved.
 
 ### Manual Installation
 
 ```bash
-git clone https://github.com/NikitaYechshenko/Always-On-Top-Outline.git
-cd Always-On-Top-Outline
-mkdir -p ~/.local/share/gnome-shell/extensions/always-on-top-outline@NikitaYechshenko
-cp -r extension.js prefs.js metadata.json schemas ~/.local/share/gnome-shell/extensions/always-on-top-outline@NikitaYechshenko/
+git clone https://github.com/NikitaYechshenko/always-on-top-outline.git
+cd always-on-top-outline
+mkdir -p ~/.local/share/gnome-shell/extensions/always-on-top-outline-v2@NikitaYechshenko
+cp -r extension.js prefs.js metadata.json schemas ~/.local/share/gnome-shell/extensions/always-on-top-outline-v2@NikitaYechshenko/
 ```
 
 Then restart GNOME Shell:

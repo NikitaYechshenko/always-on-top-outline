@@ -15,7 +15,7 @@ export default class AlwaysOnTopIndicatorExtension extends Extension {
     enable() {
         // Initialize settings - try/catch to provide defaults if schema not found
         try {
-            this._settings = this.getSettings('org.gnome.shell.extensions.always-on-top-outline');
+            this._settings = this.getSettings('org.gnome.shell.extensions.always-on-top-outline-v2');
             this._borderWidth = this._settings.get_double('border-thickness');
             this._borderColor = this._settings.get_string('border-color');
             this._borderAlpha = this._settings.get_double('border-alpha');
@@ -75,6 +75,12 @@ export default class AlwaysOnTopIndicatorExtension extends Extension {
         this._workspaceSwitchId = global.window_manager.connect('switch-workspace',
             this._onWorkspaceSwitch.bind(this));
 
+        // Connect to Overview showing/hiding to hide borders during Overview mode
+        this._overviewShowingId = Main.overview.connect('showing',
+            this._onOverviewShowing.bind(this));
+        this._overviewHidingId = Main.overview.connect('hiding',
+            this._onOverviewHiding.bind(this));
+
         // Process existing windows
         const windowActors = global.get_window_actors();
         for (const windowActor of windowActors) {
@@ -86,16 +92,16 @@ export default class AlwaysOnTopIndicatorExtension extends Extension {
     }
 
     disable() {
-        // Disconnect settings
-        if (this._settingsChangedId) {
+        // Disconnect settings - check if settings object exists before using it
+        if (this._settings && this._settingsChangedId) {
             this._settings.disconnect(this._settingsChangedId);
             this._settingsChangedId = null;
         }
-        if (this._colorChangedId) {
+        if (this._settings && this._colorChangedId) {
             this._settings.disconnect(this._colorChangedId);
             this._colorChangedId = null;
         }
-        if (this._alphaChangedId) {
+        if (this._settings && this._alphaChangedId) {
             this._settings.disconnect(this._alphaChangedId);
             this._alphaChangedId = null;
         }
@@ -109,6 +115,16 @@ export default class AlwaysOnTopIndicatorExtension extends Extension {
         if (this._workspaceSwitchId) {
             global.window_manager.disconnect(this._workspaceSwitchId);
             this._workspaceSwitchId = null;
+        }
+
+        // Disconnect Overview signals
+        if (this._overviewShowingId) {
+            Main.overview.disconnect(this._overviewShowingId);
+            this._overviewShowingId = null;
+        }
+        if (this._overviewHidingId) {
+            Main.overview.disconnect(this._overviewHidingId);
+            this._overviewHidingId = null;
         }
 
         // Clean up all borders and handlers
@@ -145,6 +161,28 @@ export default class AlwaysOnTopIndicatorExtension extends Extension {
         });
     }
 
+    _onOverviewShowing() {
+        // Hide all borders when Overview mode is activated
+        this._borders.forEach((borderInfo) => {
+            if (borderInfo && borderInfo.actors) {
+                borderInfo.actors.forEach(actor => {
+                    if (actor) {
+                        actor.visible = false;
+                    }
+                });
+            }
+        });
+        log('[Always-On-Top] Overview showing - borders hidden');
+    }
+
+    _onOverviewHiding() {
+        // Show borders again when returning from Overview mode
+        this._borders.forEach((borderInfo, metaWindow) => {
+            this._updateBorderVisibility(metaWindow, borderInfo);
+        });
+        log('[Always-On-Top] Overview hiding - borders restored');
+    }
+
     _isWindowOnCurrentWorkspace(metaWindow) {
         const activeWorkspace = global.workspace_manager.get_active_workspace();
         const windowWorkspace = metaWindow.get_workspace();
@@ -169,8 +207,8 @@ export default class AlwaysOnTopIndicatorExtension extends Extension {
         const g = parseInt(hex.substring(2, 4), 16);
         const b = parseInt(hex.substring(4, 6), 16);
         
-        // Use rgba() format - GNOME Shell CSS engine doesn't support 8-digit HEX
-        return `background-color: rgba(${r}, ${g}, ${b}, ${this._borderAlpha});`;
+        // Draw a real outline so rounded corners are visible.
+        return `background-color: transparent; border: ${this._borderWidth}px solid rgba(${r}, ${g}, ${b}, ${this._borderAlpha}); border-radius: 8px;`;
     }
 
     _updateBorderStyle() {
@@ -264,29 +302,8 @@ export default class AlwaysOnTopIndicatorExtension extends Extension {
             return;
         }
 
-        // Create 4 border actors (top, right, bottom, left) for better control
-        const borderTop = new St.Bin({
-            reactive: false,
-            can_focus: false,
-            track_hover: false,
-            style: this._getBorderStyle()
-        });
-
-        const borderRight = new St.Bin({
-            reactive: false,
-            can_focus: false,
-            track_hover: false,
-            style: this._getBorderStyle()
-        });
-
-        const borderBottom = new St.Bin({
-            reactive: false,
-            can_focus: false,
-            track_hover: false,
-            style: this._getBorderStyle()
-        });
-
-        const borderLeft = new St.Bin({
+        // Use a single outline actor so border-radius is rendered correctly.
+        const borderOutline = new St.Bin({
             reactive: false,
             can_focus: false,
             track_hover: false,
@@ -298,22 +315,9 @@ export default class AlwaysOnTopIndicatorExtension extends Extension {
             try {
                 const rect = metaWindow.get_frame_rect();
                 const bw = this._borderWidth;
-                
-                // Top border
-                borderTop.set_position(rect.x - bw, rect.y - bw);
-                borderTop.set_size(rect.width + 2 * bw, bw);
-                
-                // Right border
-                borderRight.set_position(rect.x + rect.width, rect.y);
-                borderRight.set_size(bw, rect.height);
-                
-                // Bottom border
-                borderBottom.set_position(rect.x - bw, rect.y + rect.height);
-                borderBottom.set_size(rect.width + 2 * bw, bw);
-                
-                // Left border
-                borderLeft.set_position(rect.x - bw, rect.y);
-                borderLeft.set_size(bw, rect.height);
+
+                borderOutline.set_position(rect.x - bw, rect.y - bw);
+                borderOutline.set_size(rect.width + (2 * bw), rect.height + (2 * bw));
             } catch (e) {
                 // Window may have been destroyed
             }
@@ -322,10 +326,7 @@ export default class AlwaysOnTopIndicatorExtension extends Extension {
         updateBorderGeometry();
 
         // Add to UI group with higher stack level
-        Main.layoutManager.addChrome(borderTop, { affectsInputRegion: false });
-        Main.layoutManager.addChrome(borderRight, { affectsInputRegion: false });
-        Main.layoutManager.addChrome(borderBottom, { affectsInputRegion: false });
-        Main.layoutManager.addChrome(borderLeft, { affectsInputRegion: false });
+        Main.layoutManager.addChrome(borderOutline, { affectsInputRegion: false });
         
         log(`[Always-On-Top] Border added successfully for: ${metaWindow.get_title()}`);
 
@@ -335,7 +336,7 @@ export default class AlwaysOnTopIndicatorExtension extends Extension {
 
         // Store border actors and their handler IDs
         const borderInfo = {
-            actors: [borderTop, borderRight, borderBottom, borderLeft],
+            actors: [borderOutline],
             sizeChangedId: sizeChangedId,
             positionChangedId: positionChangedId
         };
